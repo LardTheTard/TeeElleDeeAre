@@ -1,0 +1,35 @@
+{
+  "name": "Link Summarizer",
+  "description": "Base Level Extension",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "body.html",
+    "default_icon": {
+      "16": "icons/memo-emoji-16.png",
+      "48": "icons/memo-emoji-48.png",
+      "128": "icons/memo-emoji-128.png"
+    }
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+  {
+    "matches": ["<all_urls>"],
+    "js": [
+          "scripts/readingTime.js",
+          "scripts/tooltip.js"
+          ],
+    "css": ["tooltip.css"],
+    "run_at": "document_idle"
+  }
+  ]
+}
+

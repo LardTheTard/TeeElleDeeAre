@@ -19,29 +19,79 @@ document.addEventListener('keyup', (e) => {
 
 document.addEventListener('click', (e) => {
     const link = e.target.closest('a');
+
     if (link && link.href && keysDown.has('r')) {
         e.preventDefault();
         const url = link.href;
-        const tooltipText = getTooltipContent(url)
+        const tooltipText = test(url)
         tooltip.textContent = tooltipText;
         tooltip.style.display = 'block';
         updateTooltipPosition(e);
         console.log('successfully added default r tooltip');
     }
+
     else if (link && link.href && keysDown.has('t')) {
         e.preventDefault();
+        tooltip.innerHTML = `<h1 id='norm_h1'> Loading content... </h1>`;
+        tooltip.style.display = 'block';
+        updateTooltipPosition(e);
         chrome.runtime.sendMessage(
-            { action: 'fetchUrl', url: link.href },
+            { action: 'fetchContent', url: link.href },
             (response) => {
                 if (response.success) {
-                    showTooltipContent(response.content)
+                    showTooltipContent(response.content);
                     console.log('Content:', response.content);
                 } else {
+                    tooltip.innerHTML = `<h1 id='norm_h1'> Error loading content </h1>`;
                     console.error('Error:', response.error);
                 }
             }
         );
         console.log('successfully did a T action');
+    }
+
+    else if (link && link.href && keysDown.has('s')) {
+        e.preventDefault();
+        tooltip.innerHTML = `<h1 id='norm_h1'> Fetching content... </h1>`;
+        tooltip.style.display = 'block';
+        updateTooltipPosition(e);
+        
+        // First fetch the page content
+        chrome.runtime.sendMessage(
+            { action: 'fetchContent', url: link.href },
+            (response) => {
+                if (response.success) {
+                    const text = extractMainText(response.content);
+                    
+                    if (!text || text.length < 100) {
+                        tooltip.innerHTML = 'Not enough text to summarize';
+                        return;
+                    }
+                    
+                    tooltip.innerHTML = `<h1 id='norm_h1'> Generating summary... </h1>`;
+                    
+                    // Now summarize with Llama
+                    chrome.runtime.sendMessage(
+                        { action: 'summarize', text: text },
+                        (summaryResponse) => {
+                            if (summaryResponse.success) {
+                                tooltip.innerHTML = `
+                                    <h1 id='norm_h1'>Page Summary</h1>
+                                    <p id='norm_p'>${summaryResponse.summary}</p>
+                                    <small>Powered by Llama</small>
+                                `;
+                            } else {
+                                tooltip.innerHTML = `Error: ${summaryResponse.error}`;
+                            }
+                        }
+                    );
+                } else {
+                    tooltip.innerHTML = 'Could not load page';
+                    console.error('Error:', response.error);
+                }
+            }
+        );
+        console.log('successfully did an S action (summarize)');
     }
 });
 
@@ -87,7 +137,7 @@ function updateTooltipPosition(e) {
     tooltip.style.top = top + 'px';
 }
   
-function getTooltipContent(url) {
+function test(url) {
     if (url.includes('youtube')) {
         return 'YOUTUBEEEEEEEEE';
     }
@@ -117,15 +167,9 @@ function convertHTMLToDoc(html) {
 
 function showTooltipContent(html) {
     const info = analyzeContent(html);
-    const doc = convertHTMLToDoc(html);
-    const description = doc.querySelector('meta[name="description"]')?.content || 'No description';
-    const textList = doc.querySelectorAll('p, a, span');//page could also contain in articles or spans, not just p
-    let text = '';
-
-    for (let i = 0; i < textList.length && i < 100; i++) {
-        text = text + textList[i].textContent;
-    }
-
+    const text = extractMainText(html);
+    // const description = doc.querySelector('meta[name="description"]')?.content || 'No description';
+    
     const title = info[0];
     const linksNum = info[1] ?? 0;
     const imgsNum = info[2] ?? 0;
@@ -138,10 +182,18 @@ function showTooltipContent(html) {
         <small> ${text} </small>
     `;
     console.log(text);
-    // tooltip.innerHTML = `
-    //     <h1> Title: ${title} </h1>
-    //     <p> Links: ${linksNum} </p>
-    //     <p> Images: ${imgsNum} </p>
     //     <small> ${description} </small>
-    // `;
+}
+
+function extractMainText(html) {
+    const doc = convertHTMLToDoc(html);
+    const textList = doc.querySelectorAll('p, a, span, article');//page could also contain in articles or spans, not just p
+    let text = '';
+
+    for (let i = 0; i < textList.length && i < 100; i++) {
+        text = text + textList[i].textContent;
+    }
+
+    // Limit to 1000 chars for Pegasus
+    return text.substring(0, 1000);
 }

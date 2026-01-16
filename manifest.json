@@ -24,8 +24,8 @@
   {
     "matches": ["<all_urls>"],
     "js": [
-          "scripts/readingTime.js",
-          "scripts/tooltip.js"
+            "scripts/readingTime.js",
+            "scripts/tooltip.js"
           ],
     "css": ["tooltip.css"],
     "run_at": "document_idle"

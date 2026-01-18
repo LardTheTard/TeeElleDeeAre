@@ -1,19 +1,43 @@
 <!DOCTYPE html>
-<html>
-  <body>
-    <h1>Hello Extenions</h1>
-    <input id='textInput' type='text' placeholder='Input your google document URL..'' />
-    <button id='sendBtn'>Send</button>
-    <div>
-      <label for='tokenSlider'>Max Tokens: <span id='tokenValue'>150</span></label>
-      <input id='tokenSlider' type='range' min='100' max='500' value='150' step='10' />
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeeElleDeeAre - Link Summarizer</title>
+  <link rel="stylesheet" href="styles/popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">TLDR</div>
+      <div class="subtitle">Too Long; Didn't Read</div>
     </div>
-    <div>
-      <label for='scopeSlider'>Max Scope (in words): <span id='scopeValue'>500</span></label>
-      <input id='scopeSlider' type='range' min='300' max='1000' value='500' step='10' />
-    </div>
-    <p id='captionText' style='display: none'></p>
 
-    <script src='scripts/popup.js'></script>
-  </body>
+    <div class="input-group">
+      <label class="input-label" for="textInput">Google Document URL</label>
+      <input id="textInput" type="text" placeholder="https://docs.google.com/document/d/..." />
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>Max Tokens</span>
+        <span class="slider-value" id="tokenValue">150</span>
+      </div>
+      <input id="tokenSlider" type="range" min="100" max="500" value="150" step="10" />
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>Max Scope (elements)</span>
+        <span class="slider-value" id="scopeValue">300</span>
+      </div>
+      <input id="scopeSlider" type="range" min="300" max="1000" value="300" step="10" />
+    </div>
+
+    <button id="sendBtn">Connect Document</button>
+    <p id="captionText"></p>
+  </div>
+
+  <script src="scripts/popup.js"></script>
+</body>
 </html>

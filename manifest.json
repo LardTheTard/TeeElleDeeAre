@@ -1,6 +1,6 @@
 {
-  "name": "Link Summarizer",
-  "description": "Base Level Extension",
+  "name": "TeeElleDeeAre",
+  "description": "Too Long; Didn't Read - AI-powered link summarizer extension",
   "version": "1.0",
   "manifest_version": 3,
   "action": {
@@ -36,7 +36,7 @@
             "scripts/readingTime.js",
             "scripts/tooltip.js"
           ],
-    "css": ["tooltip.css"],
+    "css": ["styles/tooltip.css"],
     "run_at": "document_idle"
   }
   ]

@@ -196,4 +196,4 @@ function extractMainText(html) {
 
     // Limit to 1000 chars for Pegasus
     return text.substring(0, 1000);
-}
+} 

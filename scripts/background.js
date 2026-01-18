@@ -1,5 +1,34 @@
-importScripts('../config.js');
+importScripts('../config.js'); //import the hugging face key from config.js that exists
+//in root. config.js is in gitignore
 
+let cachedToken = null; //cached oauth token, stored here and in chrome.storage, replaced every so often when expired
+
+// Get token, make new token if not exist
+async function getToken() {
+    if (cachedToken) return cachedToken;
+    const { oauthToken } = await chrome.storage.local.get('oauthToken');
+    if (oauthToken) {
+        cachedToken = oauthToken;
+        return oauthToken;
+    }
+    chrome.identity.getAuthToken({ interactive: true }, async (token) => {
+        if (chrome.runtime.lastError) {
+          console.error(chrome.runtime.lastError);
+          return;
+        }
+        await chrome.storage.local.set({ oauthToken: token });
+        cachedToken = token;
+        console.log('first set OAuth token:', token);
+    })
+    if (cachedToken) {
+        return cachedToken;
+    }
+    console.log("token error");
+    return null;
+}
+
+//clicked with 's' or 't', sent a message from tooltip.js and now need to access the link's
+//inner content for either summarizing or raw display
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'fetchContent') {
         fetch(request.url)
@@ -25,11 +54,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         return true;
     }
+
+    else if (request.action === 'updateDocsLink') {
+        getToken().then(token => {
+            if (token) {
+                console.log(token);
+                console.log(request.id);
+                insertText(request.id, token, 'super idol de xiao rong dou mei ni de tian')
+                    .then(res => {
+                        sendResponse({ success: true });
+                    })
+                    .catch(error => {
+                        sendResponse({ success: false, error: error.message });
+                    });
+            } // HELPPPPPP
+        })
+        return true;
+    }
 });
 
 async function summarize(text) {
     // Get HF_TOKEN from huggingface.co/settings/tokens
-    
     const response = await fetch(
         'https://router.huggingface.co/v1/chat/completions',
         {
@@ -64,4 +109,27 @@ async function summarize(text) {
     }
     
     return data.choices[0].message.content;
+}
+
+async function insertText(id, token, text) {
+    const res = await fetch(
+        `https://docs.googleapis.com/v1/documents/${id}:batchUpdate`,
+        {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            requests: [{
+            insertText: {
+                location: { index: 1 },
+                text
+            }
+            }]
+        })
+        }
+    );
+
+    return res.json();
 }

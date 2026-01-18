@@ -1,5 +1,6 @@
 # TeeElleDeeAre (TLDR) 
 
+
 **Too Long; Didn't Read** - An AI-powered Chrome extension that summarizes web content and integrates with Google Docs. Scroll to the very bottom for author notes.
 
 ## 📋 Overview

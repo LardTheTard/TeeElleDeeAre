@@ -4,6 +4,14 @@
     <h1>Hello Extenions</h1>
     <input id='textInput' type='text' placeholder='Input your google document URL..'' />
     <button id='sendBtn'>Send</button>
+    <div>
+      <label for='tokenSlider'>Max Tokens: <span id='tokenValue'>150</span></label>
+      <input id='tokenSlider' type='range' min='100' max='500' value='150' step='10' />
+    </div>
+    <div>
+      <label for='scopeSlider'>Max Scope (in words): <span id='scopeValue'>500</span></label>
+      <input id='scopeSlider' type='range' min='300' max='1000' value='500' step='10' />
+    </div>
     <p id='captionText' style='display: none'></p>
 
     <script src='scripts/popup.js'></script>

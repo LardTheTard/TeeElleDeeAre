@@ -39,9 +39,9 @@ document.addEventListener('click', async (e) => {
         updateTooltipPosition(e);
         chrome.runtime.sendMessage(
             { action: 'fetchContent', url: link.href },
-            (response) => {
+            async (response) => {
                 if (response.success) {
-                    showTooltipContent(response.content);
+                    await showTooltipContent(response.content);
                     console.log('Content:', response.content);
                 } else {
                     tooltip.innerHTML = `<h1 id='norm_h1'> Error loading content </h1>`;
@@ -62,9 +62,9 @@ document.addEventListener('click', async (e) => {
         // First fetch the page content
         chrome.runtime.sendMessage(
             { action: 'fetchContent', url: link.href },
-            (response) => {
+            async (response) => {
                 if (response.success) {
-                    const text = extractMainText(response.content);
+                    const text = await extractMainText(response.content);
                     
                     if (!text || text.length < 100) {
                         tooltip.innerHTML = 'Not enough text to summarize';
@@ -107,9 +107,9 @@ document.addEventListener('click', async (e) => {
         // First fetch the page content, same code as above.
         chrome.runtime.sendMessage(
             { action: 'fetchContent', url: link.href },
-            (response) => {
+            async (response) => {
                 if (response.success) {
-                    const text = extractMainText(response.content);
+                    const text = await extractMainText(response.content);
                     
                     if (!text || text.length < 100) {
                         tooltip.innerHTML = 'Not enough text to summarize';
@@ -236,9 +236,9 @@ function convertHTMLToDoc(html) {
     return doc;
 }
 
-function showTooltipContent(html) {
+async function showTooltipContent(html) {
     const info = analyzeContent(html);
-    const text = extractMainText(html);
+    const text = await extractMainText(html);
     // const description = doc.querySelector('meta[name="description"]')?.content || 'No description';
     
     const title = info[0];
@@ -256,15 +256,19 @@ function showTooltipContent(html) {
     //     <small> ${description} </small>
 }
 
-function extractMainText(html) {
+async function extractMainText(html) {
+    // Get maxscope from storage, default to 100 if not set
+    const { maxscope } = await chrome.storage.local.get('maxscope');
+    const maxScopeValue = maxscope || 300;
+    
     const doc = convertHTMLToDoc(html);
     const textList = doc.querySelectorAll('p, a, span, article');//page could also contain in articles or spans, not just p
     let text = '';
 
-    for (let i = 0; i < textList.length && i < 100; i++) {
+    for (let i = 0; i < textList.length && i < maxScopeValue; i++) {
         text = text + textList[i].textContent;
     }
 
     // Limit to 1000 chars for Pegasus
-    return text.substring(0, 1000);
+    return text;
 } 

@@ -13,7 +13,7 @@ function getToken() {
     });
 }
 
-//clicked with 's' or 't', sent a message from tooltip.js and now need to access the link's
+//clicked with 's' 't' ''x', sent a message from tooltip.js and now need to access the link's
 //inner content for either summarizing or raw display
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'fetchContent') {
@@ -44,9 +44,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     else if (request.action === 'updateDocsLink') {
         getToken().then(token => {
             if (token) {
-                console.log(token);
-                console.log(request.id);
-                console.log(request.text);
+                // console.log(token);
+                // console.log(request.id);
+                // console.log(request.text);
                 insertText(request.id, token, request.text)
                     .then(() => {
                         sendResponse({ success: true });
@@ -54,13 +54,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     .catch(error => {
                         sendResponse({ success: false, error: error.message });
                     });
-            } // HELPPPPPP
+            } 
         })
         return true;
     }
 });
 
 async function summarize(text) {
+    // Get max_tokens from storage, default to 150 if not set
+    const { maxTokens } = await chrome.storage.local.get('maxTokens');
+    const maxTokensValue = maxTokens || 150;
+    let sentenceNum = '';
+    if (maxTokensValue <= 150) {
+        sentenceNum = '2-3';
+    } else if (150 < maxTokensValue && maxTokensValue <= 250) {
+        sentenceNum = '3-4';
+    } else if (250 < maxTokensValue && maxTokensValue <= 350) {
+        sentenceNum = '4-5';
+    } else {
+        sentenceNum = '5-6';
+    }
+
+    
     // Get HF_TOKEN from huggingface.co/settings/tokens
     const response = await fetch(
         'https://router.huggingface.co/v1/chat/completions',
@@ -71,14 +86,14 @@ async function summarize(text) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'meta-llama/Llama-3.1-8B-Instruct', // or another available model
+                model: 'meta-llama/Llama-3.1-8B-Instruct', 
                 messages: [
                     { 
                         role: 'user', 
-                        content: `Summarize the following text in 2-3 sentences. Only return the summary, nothing else:\n\n${text.substring(0, 2000)}` 
+                        content: `Summarize the following text in ${sentenceNum} sentences. Only return the summary, nothing else:\n\n${text}` 
                     }
                 ],
-                max_tokens: 150,
+                max_tokens: maxTokensValue,
                 temperature: 0.3
             })
         }

@@ -17,9 +17,10 @@ document.addEventListener('keyup', (e) => {
     console.log(e.key + ' was released');
 });
 
-document.addEventListener('click', (e) => {
+document.addEventListener('click', async (e) => {
     const link = e.target.closest('a');
 
+    //testing tooltip ability
     if (link && link.href && keysDown.has('r')) {
         e.preventDefault();
         const url = link.href;
@@ -30,6 +31,7 @@ document.addEventListener('click', (e) => {
         console.log('successfully added default r tooltip');
     }
 
+    //testing fetching html from link
     else if (link && link.href && keysDown.has('t')) {
         e.preventDefault();
         tooltip.innerHTML = `<h1 id='norm_h1'> Loading content... </h1>`;
@@ -50,6 +52,7 @@ document.addEventListener('click', (e) => {
         console.log('successfully did a T action');
     }
 
+    //link content summary
     else if (link && link.href && keysDown.has('s')) {
         e.preventDefault();
         tooltip.innerHTML = `<h1 id='norm_h1'> Fetching content... </h1>`;
@@ -93,6 +96,66 @@ document.addEventListener('click', (e) => {
         );
         console.log('successfully did an S action (summarize)');
     }
+
+    //insert summary/text into specified google docs
+    else if (link && link.href && keysDown.has('x')) {
+        e.preventDefault();
+        tooltip.innerHTML = `<h1 id='norm_h1'> Fetching content... </h1>`;
+        tooltip.style.display = 'block';
+        updateTooltipPosition(e);
+        
+        // First fetch the page content, same code as above.
+        chrome.runtime.sendMessage(
+            { action: 'fetchContent', url: link.href },
+            (response) => {
+                if (response.success) {
+                    const text = extractMainText(response.content);
+                    
+                    if (!text || text.length < 100) {
+                        tooltip.innerHTML = 'Not enough text to summarize';
+                        return;
+                    }
+                    
+                    tooltip.innerHTML = `<h1 id='norm_h1'> Generating summary... </h1>`;
+                    
+                    // Now summarize with Llama
+                    chrome.runtime.sendMessage(
+                        { action: 'summarize', text: text },
+                        (summaryResponse) => {
+                            if (summaryResponse.success) {
+                                tooltip.innerHTML = `
+                                    <h1 id='norm_h1'>Page Summary</h1>
+                                    <p id='norm_p'>${summaryResponse.summary}</p>
+                                    <small>Powered by Llama</small>
+                                `;
+                                getId().then(docId => {
+                                    if (docId) {
+                                        chrome.runtime.sendMessage({ action: 'updateDocsLink', id: docId, text: summaryResponse.summary}, (response) => {
+                                            if (response.success) {
+                                                console.log('inserted text successfully');
+                                            } else {
+                                                console.error('Error:', response.error);
+                                            }
+                                        })
+                                    }
+                                    else {
+                                        tooltip.innerHTML = `<h1 id='norm_h1'> Haven't set document ID yet. </h1>`;
+                                        tooltip.style.display = 'block';
+                                    }
+                                })
+                            } else {
+                                tooltip.innerHTML = `Error: ${summaryResponse.error}`;
+                            }
+                        }
+                    );
+                } else {
+                    tooltip.innerHTML = 'Could not load page';
+                    console.error('Error:', response.error);
+                }
+            }
+        );
+        console.log('successfully did an X action (summarize and insert)');
+    }
 });
 
 // document.addEventListener('mouseover', (e) => {
@@ -118,6 +181,14 @@ document.addEventListener('mouseout', (e) => {
         tooltip.style.display = 'none';
     }
 });
+
+async function getId() {
+    const { docId } = await chrome.storage.local.get('docId');
+    if (docId) {
+        return docId;
+    }
+    return null;
+}
 
 function updateTooltipPosition(e) {
     const offset = 15;

@@ -1,30 +1,16 @@
 importScripts('../config.js'); //import the hugging face key from config.js that exists
 //in root. config.js is in gitignore
 
-let cachedToken = null; //cached oauth token, stored here and in chrome.storage, replaced every so often when expired
-
 // Get token, make new token if not exist
-async function getToken() {
-    if (cachedToken) return cachedToken;
-    const { oauthToken } = await chrome.storage.local.get('oauthToken');
-    if (oauthToken) {
-        cachedToken = oauthToken;
-        return oauthToken;
-    }
-    chrome.identity.getAuthToken({ interactive: true }, async (token) => {
-        if (chrome.runtime.lastError) {
-          console.error(chrome.runtime.lastError);
-          return;
-        }
-        await chrome.storage.local.set({ oauthToken: token });
-        cachedToken = token;
-        console.log('first set OAuth token:', token);
-    })
-    if (cachedToken) {
-        return cachedToken;
-    }
-    console.log("token error");
-    return null;
+function getToken() {
+    return new Promise((resolve, reject) => {
+        chrome.identity.getAuthToken({ interactive: true }, (token) => {
+            if (chrome.runtime.lastError) {
+                return reject(chrome.runtime.lastError);
+            }
+            resolve(token);
+        });
+    });
 }
 
 //clicked with 's' or 't', sent a message from tooltip.js and now need to access the link's
@@ -60,8 +46,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (token) {
                 console.log(token);
                 console.log(request.id);
-                insertText(request.id, token, 'super idol de xiao rong dou mei ni de tian')
-                    .then(res => {
+                console.log(request.text);
+                insertText(request.id, token, request.text)
+                    .then(() => {
                         sendResponse({ success: true });
                     })
                     .catch(error => {
@@ -133,3 +120,28 @@ async function insertText(id, token, text) {
 
     return res.json();
 }
+
+//old gettoken function, doesnt automatically refresh token unlike current function.
+
+// async function getToken() {
+//     if (cachedToken) return cachedToken;
+//     const { oauthToken } = await chrome.storage.local.get('oauthToken');
+//     if (oauthToken) {
+//         cachedToken = oauthToken;
+//         return oauthToken;
+//     }
+//     chrome.identity.getAuthToken({ interactive: true }, async (token) => {
+//         if (chrome.runtime.lastError) {
+//           console.error(chrome.runtime.lastError);
+//           return;
+//         }
+//         await chrome.storage.local.set({ oauthToken: token });
+//         cachedToken = token;
+//         console.log('first set OAuth token:', token);
+//     })
+//     if (cachedToken) {
+//         return cachedToken;
+//     }
+//     console.log("token error");
+//     return null;
+// }
